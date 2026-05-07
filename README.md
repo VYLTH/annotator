@@ -72,6 +72,8 @@ The diagnostic envelope is collected automatically — the user only types the c
 | **Browser extension** | Click the toolbar icon on any tab. Captures via `chrome.tabs.captureVisibleTab()`. | Annotate competitor sites, Figma, Notion, your own deployed prod app — anything you didn't ship the script tag on. [Sideload zip on the latest release](https://github.com/VYLTH/annotator/releases). |
 | **`@vylth/annotator-react`** | `<Annotator project token metadata />` component. | React app where you want feedback gated to dev/staging via env, with app-state metadata attached. |
 
+For **production-safe gating** — keeping the widget URL strings out of `dist/` rather than soft-failing on auth — see [docs/INSTALL-PATTERNS.md](docs/INSTALL-PATTERNS.md). Custodial / PHI / financial products should combine a build-time strip with a runtime guard.
+
 ## Agent integration
 
 ```bash
