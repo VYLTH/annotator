@@ -1,0 +1,14 @@
+node_modules
+dist
+.venv
+__pycache__
+*.pyc
+.env
+.env.local
+.DS_Store
+*.log
+.annot/
+packages/extension/releases/
+packages/extension/dist/
+*.tgz
+build/

@@ -1,0 +1,30 @@
+{
+  "name": "vylth-annotator",
+  "version": "0.0.1",
+  "description": "Drop-in design-feedback widget. Click → page freezes → drag a rect → engineer pulls the diagnostic envelope. Self-hostable on localhost.",
+  "license": "MIT",
+  "homepage": "https://github.com/VYLTH/annotator",
+  "repository": "github:VYLTH/annotator",
+  "bugs": "https://github.com/VYLTH/annotator/issues",
+  "type": "module",
+  "bin": {
+    "annotator": "bin/annotator.js",
+    "vylth-annotator": "bin/annotator.js"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "annotation",
+    "feedback",
+    "screenshot",
+    "design-review",
+    "developer-tools",
+    "widget",
+    "diagnostics"
+  ]
+}

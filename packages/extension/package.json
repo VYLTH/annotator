@@ -1,0 +1,15 @@
+{
+  "name": "@vylth/annotator-extension",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build && node scripts/zip.mjs",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "typescript": "^5.5.0",
+    "@types/chrome": "^0.0.270"
+  }
+}

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>annotator · dashboard</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 28px;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #0e0f12; color: #ededed; font-size: 14px; line-height: 1.5;
+    }
+    header {
+      display: flex; align-items: baseline; gap: 12px;
+      padding-bottom: 16px; border-bottom: 1px solid #1f2127; margin-bottom: 20px;
+    }
+    h1 {
+      margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+    }
+    .kicker {
+      text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px;
+      color: #ff4d4d; font-weight: 600;
+    }
+    .meta { color: #6a6e76; font-size: 12px; margin-left: auto; }
+    .meta b { color: #ededed; font-weight: 600; }
+    .empty {
+      padding: 64px 24px; text-align: center; color: #6a6e76;
+      border: 1px dashed #232730; border-radius: 12px; margin-top: 24px;
+    }
+    .empty code {
+      display: inline-block; margin-top: 12px; padding: 8px 12px;
+      background: #16181d; border-radius: 6px; color: #ededed;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    }
+    .grid {
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    }
+    .card {
+      background: #16181d; border: 1px solid #232730; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .card .img {
+      aspect-ratio: 16 / 10; background: #000;
+      background-size: cover; background-position: center top;
+    }
+    .card .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .card .comment { font-size: 13px; }
+    .card .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11px; color: #6a6e76; }
+    .card .row code { color: #ededed; }
+    .card .actions { display: flex; gap: 8px; margin-top: 4px; }
+    .card .actions button {
+      all: unset; cursor: pointer; padding: 6px 10px;
+      border-radius: 6px; font-size: 12px; font-weight: 600;
+      background: #232730; color: #ededed;
+    }
+    .card .actions button:hover { background: #2a2d34; }
+    .card .actions button.primary { background: #ff4d4d; color: #fff; }
+    .card .actions button.primary:hover { background: #ff6464; }
+    details { font-size: 11px; color: #888; }
+    details summary { cursor: pointer; user-select: none; }
+    details pre {
+      background: #0a0b0e; padding: 10px; border-radius: 6px;
+      overflow: auto; margin: 6px 0 0; max-height: 240px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px;
+      color: #c5c8cf;
+    }
+    .pill {
+      display: inline-block; padding: 1px 7px; border-radius: 999px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    }
+    .pill.errors { background: #2a1316; color: #ffb4b4; }
+    .pill.netw   { background: #1c1a2a; color: #b4baff; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="kicker">Annotator</span>
+    <h1>Dashboard</h1>
+    <div class="meta"><b id="count">0</b> open · auto-refresh <span id="last">–</span></div>
+  </header>
+
+  <div id="root">
+    <div class="empty" id="empty">
+      <div>No annotations yet.</div>
+      <div style="margin-top:6px">Drop this into your local site's HTML to start collecting:</div>
+      <code>&lt;script src="http://localhost:8092/w.js" data-project="local" data-token="local" data-webhook="http://localhost:8092/v1/feedback"&gt;&lt;/script&gt;</code>
+    </div>
+  </div>
+
+<script>
+const root  = document.getElementById('root');
+const empty = document.getElementById('empty');
+const cntEl = document.getElementById('count');
+const lastEl = document.getElementById('last');
+
+async function fetchOpen() {
+  try {
+    const res = await fetch('/v1/feedback?status=open', { headers: { 'X-Annot-Token': 'local' } });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const json = await res.json();
+    render(json.items || []);
+    lastEl.textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    lastEl.textContent = 'error';
+    console.error(e);
+  }
+}
+
+function pill(text, kind) { return `<span class="pill ${kind}">${text}</span>`; }
+
+function render(items) {
+  cntEl.textContent = items.length;
+  if (!items.length) {
+    root.innerHTML = '';
+    root.appendChild(empty);
+    return;
+  }
+  empty.remove();
+  root.innerHTML = `<div class="grid">${items.map(card).join('')}</div>`;
+  root.querySelectorAll('button[data-resolve]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      const id = b.dataset.resolve;
+      await fetch(`/v1/feedback/${id}/resolve`, {
+        method: 'POST',
+        headers: { 'X-Annot-Token': 'local' },
+      });
+      fetchOpen();
+    });
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function card(fb) {
+  const errs = (fb.errors  || []).length;
+  const netw = (fb.network || []).length;
+  const consol = (fb.console || []).length;
+  return `
+    <div class="card">
+      <div class="img" style="background-image:url('/v1/feedback/${fb.id}/image?_=${Date.now()}')"
+           onclick="window.open('/v1/feedback/${fb.id}/image','_blank')"></div>
+      <div class="body">
+        <div class="comment">${escapeHtml(fb.comment)}</div>
+        <div class="row">
+          <code>${escapeHtml(fb.pathname || '/')}</code>
+          ${errs ? pill(errs + ' err', 'errors') : ''}
+          ${netw ? pill(netw + ' net', 'netw') : ''}
+          ${consol ? pill(consol + ' log', '') : ''}
+        </div>
+        <details>
+          <summary>envelope</summary>
+          <pre>${escapeHtml(JSON.stringify({
+            url: fb.url, viewport: fb.viewport, env: fb.env,
+            console: fb.console, network: fb.network, errors: fb.errors, perf: fb.perf,
+          }, null, 2))}</pre>
+        </details>
+        <div class="actions">
+          <button data-resolve="${fb.id}" class="primary">Mark resolved</button>
+          <button onclick="navigator.clipboard.writeText('${fb.id}')">Copy ID</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+fetchOpen();
+setInterval(fetchOpen, 4000);
+</script>
+</body>
+</html>

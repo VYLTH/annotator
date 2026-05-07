@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Annotator</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 16px; width: 320px;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: #0e0f12; color: #ededed; font-size: 13px; line-height: 1.5;
+    }
+    header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .icon { color: #ff4d4d; }
+    h1 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+    label { display: block; font-size: 11px; color: #6a6e76; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    input, select {
+      width: 100%; padding: 8px 10px; margin-bottom: 12px;
+      background: #16181d; border: 1px solid #232730; color: #ededed;
+      border-radius: 6px; font-family: inherit; font-size: 13px;
+    }
+    input:focus, select:focus { outline: 2px solid rgba(255, 77, 77, 0.5); border-color: transparent; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .actions { display: flex; gap: 8px; margin-top: 6px; }
+    button {
+      all: unset; cursor: pointer; flex: 1;
+      padding: 9px 12px; border-radius: 6px; text-align: center;
+      font-weight: 600; font-size: 13px;
+    }
+    button.primary { background: #ff4d4d; color: #fff; }
+    button.primary:hover { background: #ff6464; }
+    button.ghost { background: #16181d; color: #ededed; border: 1px solid #232730; }
+    button.ghost:hover { background: #1f2127; }
+    .hint { font-size: 11px; color: #6a6e76; margin-top: 12px; padding-top: 12px; border-top: 1px solid #1f2127; }
+    .hint code { color: #ededed; background: #16181d; padding: 1px 6px; border-radius: 4px; }
+    #status { font-size: 11px; color: #6a6e76; margin-top: 6px; min-height: 14px; }
+    #status.err { color: #ffb4b4; }
+    #status.ok  { color: #a3e6a3; }
+  </style>
+</head>
+<body>
+  <header>
+    <svg class="icon" viewBox="0 0 24 24" fill="none" width="22" height="22">
+      <path d="M4 4h16v12h-6l-5 4v-4H4V4z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+      <circle cx="8" cy="10" r="1.25" fill="currentColor"/>
+      <circle cx="12" cy="10" r="1.25" fill="currentColor"/>
+      <circle cx="16" cy="10" r="1.25" fill="currentColor"/>
+    </svg>
+    <h1>Annotator</h1>
+  </header>
+
+  <label for="apiBase">API base</label>
+  <input id="apiBase" type="text" placeholder="http://localhost:8092" />
+
+  <div class="row">
+    <div>
+      <label for="project">Project</label>
+      <input id="project" type="text" placeholder="local" />
+    </div>
+    <div>
+      <label for="token">Token</label>
+      <input id="token" type="text" placeholder="local" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="save" class="ghost">Save</button>
+    <button id="start" class="primary">Annotate this page</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="hint">
+    Run <code>annotator run</code> on your laptop and the defaults just work — annotations land in <code>~/.annot/local/</code>.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

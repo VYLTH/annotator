@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Annotator · widget demo</title>
+  <style>
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: #fafafa; color: #1a1a1a;
+      display: grid; place-items: center;
+      padding: 48px 24px;
+    }
+    .card {
+      max-width: 720px; padding: 32px; background: #fff;
+      border: 1px solid #e5e5e5; border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    p  { margin: 0 0 12px; line-height: 1.6; color: #444; }
+    code {
+      background: #f4f4f4; padding: 2px 6px; border-radius: 4px;
+      font-size: 13px; color: #c7254e;
+    }
+    button.test {
+      margin-top: 12px; padding: 10px 16px;
+      background: #ff4d4d; color: #fff; border: 0; border-radius: 6px;
+      font-weight: 600; cursor: pointer;
+    }
+    button.test:hover { background: #ff6464; }
+    .wallet { color: #888; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Annotator demo</h1>
+    <p>Click the bubble in the bottom-right. Page should freeze. Drag a rectangle. Type something. Send.</p>
+    <p>Open the devtools console — with <code>data-also-log="console"</code>, the envelope is dumped there.</p>
+    <p class="wallet">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0  ← redacted via .wallet selector</p>
+    <button class="test" onclick="console.warn('demo: button click'); fetch('/does-not-exist').catch(()=>{});">
+      Trigger console.warn + fetch 404
+    </button>
+  </div>
+
+  <script
+    src="/dist/w.js"
+    data-project="demo"
+    data-token="dev-token"
+    data-webhook=""
+    data-also-log="console"
+    data-redact=".wallet"
+  ></script>
+</body>
+</html>

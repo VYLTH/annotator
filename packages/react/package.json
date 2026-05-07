@@ -1,0 +1,32 @@
+{
+  "name": "@vylth/annotator-react",
+  "version": "0.0.1",
+  "description": "React wrapper for the Vylth annotator widget. Drop <Annotator /> into a dev/staging build and click the bubble to send screenshot + diagnostic envelope to your local annotator API.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "homepage": "https://github.com/VYLTH/annotator",
+  "repository": "github:VYLTH/annotator",
+  "bugs": "https://github.com/VYLTH/annotator/issues",
+  "keywords": ["annotation", "feedback", "react", "widget", "developer-tools"],
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "react": ">=17"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "react": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}

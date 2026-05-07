@@ -1,0 +1,14 @@
+{
+  "name": "@vylth/annotator-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -F @vylth/annotator-widget dev"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
