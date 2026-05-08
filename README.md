@@ -4,25 +4,32 @@
 
 # annotator
 
-**Click → page freezes → drag a rectangle → engineer's filesystem.**
+**Click bubble · drag rectangle · type one sentence · screenshot + diagnostics land on the engineer's filesystem.**
 
 Drop-in design-feedback widget for any web app. Self-hostable on localhost. MIT.
 
-[![PyPI](https://img.shields.io/pypi/v/vylth-annotator?label=PyPI&color=3776ab&logo=pypi&logoColor=white)](https://pypi.org/project/vylth-annotator/)
-[![npm](https://img.shields.io/npm/v/vylth-annotator?label=npm&color=cb3837&logo=npm)](https://www.npmjs.com/package/vylth-annotator)
+[![PyPI](https://img.shields.io/pypi/v/vylth-annotator?label=PyPI&color=ffffff&labelColor=0a0a0c&logo=pypi&logoColor=white)](https://pypi.org/project/vylth-annotator/)
+[![npm](https://img.shields.io/npm/v/vylth-annotator?label=npm&color=ffffff&labelColor=0a0a0c&logo=npm)](https://www.npmjs.com/package/vylth-annotator)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Made by Vylth Labs](https://img.shields.io/badge/Made%20by-Vylth%20Labs-ff4d4d)](https://vylth.com)
+[![Made by Vylth Labs](https://img.shields.io/badge/Made%20by-Vylth%20Labs-0a0a0c)](https://vylth.com)
 
 </div>
 
 ---
 
 ```bash
-pipx install vylth-annotator     # or: npm i -g vylth-annotator
-annotator run                    # opens dashboard at http://localhost:8092
+npm i -g vylth-annotator        # auto-installs the Python service via pipx if available
+annotator setup                 # detects your project, injects the widget, generates a token
 ```
 
-Drop this into your dev site:
+…or in any project:
+
+```bash
+pipx install vylth-annotator
+annotator run                   # local server + dashboard at http://localhost:8092
+```
+
+Drop this into your dev site (or skip — `annotator setup` does it for you):
 
 ```html
 <script src="http://localhost:8092/w.js"
@@ -31,7 +38,9 @@ Drop this into your dev site:
         data-webhook="http://localhost:8092/v1/feedback"></script>
 ```
 
-Done. Click the bubble. The page freezes. Drag a rectangle. Type one sentence. Send. The screenshot, the page URL, the clicked element selector, the console logs, the network errors, and the JS exceptions captured at the moment of the click all land on your filesystem as a `.png` + `.md` pair under `./.annot/local/`.
+Done. Click the bubble. Drag a rectangle on whatever's wrong. Type one sentence. Send. The screenshot, the page URL, the clicked element selector, the console logs, the network errors, and the JS exceptions captured at the moment of the click all land on your filesystem as a `.png` + `.md` pair under `./.annot/local/`.
+
+**Capture happens at send time, not click time** — the page never freezes, never gets the "this page is loading slowly" termination prompt. Drag the bubble to wherever you want it; position persists.
 
 ---
 
@@ -50,12 +59,15 @@ This used to live inside one specific Vylth product as a per-app feature. The lo
 ```
 [bubble click]
    ↓
-1. dom-to-image → static PNG of the viewport            ← page freezes (≈80ms)
-2. PNG becomes the backdrop, you draw rects on a <canvas>
-3. Comment + Send → POST diagnostic envelope to the API
+1. Transparent overlay mounts over the live page (no freeze) — drag rectangles
+2. Type a sentence in the floating panel · click Send
    ↓
-4. Server writes:
-   • SQLite row (queryable, .resolve etc.)
+3. dom-to-image captures the page (with a "Capturing → Sending" spinner)
+4. Rectangles get baked into the PNG · diagnostic envelope assembled
+5. POST to your annotator API
+   ↓
+6. Server writes:
+   • SQLite row (queryable, resolvable)
    • .annot/<project>/<id8>-<slug>.png  (with rectangles baked in)
    • .annot/<project>/<id8>-<slug>.md   (frontmatter + readable envelope)
    • dashboard updates live at :8092

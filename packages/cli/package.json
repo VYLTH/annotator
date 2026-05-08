@@ -1,7 +1,7 @@
 {
   "name": "vylth-annotator",
-  "version": "0.0.1",
-  "description": "Drop-in design-feedback widget. Click → page freezes → drag a rect → engineer pulls the diagnostic envelope. Self-hostable on localhost.",
+  "version": "0.0.2",
+  "description": "Drop-in design-feedback widget. `npm i -g vylth-annotator && annotator setup` — click bubble, drag rect, screenshot+diagnostics land on your filesystem.",
   "license": "MIT",
   "homepage": "https://github.com/VYLTH/annotator",
   "repository": "github:VYLTH/annotator",
@@ -11,8 +11,12 @@
     "annotator": "bin/annotator.js",
     "vylth-annotator": "bin/annotator.js"
   },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js || true"
+  },
   "files": [
     "bin/",
+    "scripts/",
     "README.md"
   ],
   "engines": {

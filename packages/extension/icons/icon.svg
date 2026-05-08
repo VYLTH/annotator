@@ -1,9 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="28" fill="#0e0f12"/>
-  <g transform="translate(28 28) scale(2.83)" fill="none">
-    <path d="M4 4h16v12h-6l-5 4v-4H4V4z" stroke="#ff4d4d" stroke-width="1.75" stroke-linejoin="round"/>
-    <circle cx="8"  cy="10" r="1.25" fill="#ff4d4d"/>
-    <circle cx="12" cy="10" r="1.25" fill="#ff4d4d"/>
-    <circle cx="16" cy="10" r="1.25" fill="#ff4d4d"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1b1f"/>
+      <stop offset="1" stop-color="#0a0b0d"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <rect x="0.5" y="0.5" width="127" height="127" rx="27.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <g transform="translate(28 28) scale(2.83)" fill="none" fill-rule="evenodd">
+    <path d="m18.7104 4 1.293 1.293.793-.793-1.293-1.293zm-12.483 9.517 4.259 4.259 9.826-10.76-3.325-3.325zm-1.517 4.483 1.293 1.293 1.146-1.147c.094-.093.221-.146.354-.146h1.793l-3.293-3.293v1.793c0 .133-.053.26-.147.354zm-.707.707-1.292 1.292 2.585.001zm-1.293 2.293c-.406 0-.769-.242-.924-.617s-.07-.804.218-1.091l2.999-2.999v-2.791c-.001-.127.047-.254.143-.352l.022-.022 11.498-10.497c.197-.18.501-.174.69.015l.647.647 1.146-1.147c.196-.195.512-.195.707 0l2 2c.196.196.196.512 0 .708l-1.146 1.146.646.646c.19.19.197.494.016.691l-10.497 11.498-.014.014-.01.01c-.099.095-.239.116-.35.141h-2.791l-1.854 1.854c-.093.093-.22.146-.353.146z" fill="#ffffff"/>
   </g>
 </svg>
