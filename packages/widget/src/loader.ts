@@ -141,6 +141,11 @@ function mountButton(config: Config, buffers: Buffers) {
     btn.style.cursor = 'grabbing';
   });
 
+  btn.addEventListener('pointercancel', () => {
+    dragState = null;
+    btn.style.cursor = '';
+  });
+
   btn.addEventListener('pointerup', async (e: PointerEvent) => {
     if (!dragState || dragState.pid !== e.pointerId) return;
     const wasDrag = dragState.moved;

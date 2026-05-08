@@ -171,6 +171,107 @@ def init(host: str, port: int, project: str, token: str) -> None:
     click.echo(snippet)
 
 
+@cli.command(help="Auto-install the widget into your frontend project. Detects Vite / Next.js / plain HTML, "
+                  "edits your entry HTML, wires .env.local, updates .gitignore. One command, no manual edits.")
+@click.option("--cwd", default=".", help="Project root (default current dir).")
+@click.option("--project", default=None, help="Project slug (default: directory name).")
+@click.option("--token", default=None, help="Project token (default: prompt or generate).")
+@click.option("--api-base", default="https://annot.vylth.com", help="Annotator API base URL.")
+@click.option("--redact", default=None, help="CSS selectors to blur before capture (comma-separated).")
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmations, accept defaults.")
+def setup(cwd: str, project: Optional[str], token: Optional[str],
+          api_base: str, redact: Optional[str], yes: bool) -> None:
+    import secrets as _secrets
+    from .setup_inject import (
+        Stack, detect, ensure_gitignore, inject_into_html,
+        inject_into_next_layout, script_tag_html, wire_env,
+    )
+
+    root = Path(cwd).resolve()
+    found = detect(root)
+    proj = project or root.name.lower().replace(" ", "-")
+
+    click.echo("")
+    click.echo(f"  📍 Project root:  {root}")
+    click.echo(f"  🧩 Detected:      {found.framework_label}")
+    if found.entry:
+        click.echo(f"  📄 Entry file:    {found.entry.relative_to(root)}")
+    click.echo(f"  🏷️  Project slug:  {proj}")
+    click.echo(f"  🌐 API base:      {api_base}")
+    click.echo("")
+
+    if found.stack == Stack.UNKNOWN:
+        click.echo(click.style(
+            "Couldn't detect a supported framework. Either:", fg="yellow"))
+        click.echo("  1. cd into your frontend directory and re-run `annotator setup`")
+        click.echo("  2. or paste this snippet into your HTML before </body>:\n")
+        env_var = "VITE_ANNOT_TOKEN"
+        snippet_token = token or "<your-token-here>"
+        click.echo("    " + script_tag_html(
+            project=proj, api_base=api_base, env_var=env_var, redact=redact,
+        ).replace("\n", "\n    "))
+        click.echo("")
+        return
+
+    if not yes:
+        if not click.confirm(click.style("Wire it up?", fg="cyan", bold=True), default=True):
+            click.echo("Aborted.")
+            return
+
+    # Token: passed in, prompted, or generated
+    if not token:
+        token = _secrets.token_hex(24)
+        click.echo(click.style(
+            f"  🔑 Generated token: {token}", fg="green",
+        ))
+        click.echo(click.style(
+            "     Save this somewhere safe — you'll need it to view feedback at the dashboard.",
+            fg="bright_black",
+        ))
+
+    # Inject the widget
+    if found.stack in (Stack.VITE, Stack.PLAIN_HTML):
+        assert found.entry is not None
+        injected = inject_into_html(
+            found.entry,
+            project=proj, api_base=api_base, env_var=found.env_var, redact=redact,
+        )
+        if injected:
+            click.echo(f"  ✓ Injected widget into {found.entry.relative_to(root)}")
+        else:
+            click.echo(f"  • Widget already present in {found.entry.relative_to(root)} (skipped)")
+    elif found.stack in (Stack.NEXT_APP, Stack.NEXT_PAGES):
+        assert found.entry is not None
+        injected = inject_into_next_layout(
+            found.entry,
+            project=proj, api_base=api_base, env_var=found.env_var, redact=redact,
+        )
+        if injected:
+            click.echo(f"  ✓ Wrote a commented <Script> block to {found.entry.relative_to(root)}")
+            click.echo(click.style(
+                "    Open the file and uncomment the JSX block inside the return tree of your default export.",
+                fg="bright_black",
+            ))
+        else:
+            click.echo(f"  • Widget already wired into {found.entry.relative_to(root)} (skipped)")
+
+    # Env wiring
+    local_path, example_path = wire_env(env_dir=found.env_dir, env_var=found.env_var, token=token)
+    click.echo(f"  ✓ Wrote {local_path.relative_to(root)} (mode 600, gitignored)")
+    click.echo(f"  ✓ Added placeholder to {example_path.relative_to(root)}")
+
+    gi = ensure_gitignore(root=found.root)
+    click.echo(f"  ✓ Updated {gi.relative_to(root)} (.env.local + .env.*.local excluded)")
+
+    click.echo("")
+    click.echo(click.style("  Done.", fg="green", bold=True))
+    click.echo("")
+    click.echo(f"  Next: run your dev server. Click the bubble that appears.")
+    click.echo(f"  See your feedback at: {api_base}/")
+    click.echo(f"  Use project slug \"{proj}\" + the token above to log in.")
+    click.echo("")
+
+
 @cli.group(help="Install the annotator skill so agents (Claude Code, Codex, Cursor, …) read .annot/ automatically.")
 def skill() -> None:
     pass

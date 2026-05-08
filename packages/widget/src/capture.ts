@@ -36,15 +36,18 @@ export async function capture(config: Config): Promise<Captured> {
     rect = { x: window.scrollX, y: window.scrollY, w: window.innerWidth, h: window.innerHeight };
   }
 
-  const dataUrl = await domtoimage.toPng(node, {
+  const captureP = domtoimage.toPng(node, {
     width: rect.w,
     height: rect.h,
     style: config.capture === 'viewport'
       ? { transform: `translate(-${rect.x}px, -${rect.y}px)`, transformOrigin: '0 0' }
       : undefined,
     cacheBust: true,
+    // dom-to-image can hang on cross-origin images that taint the canvas.
+    // Setting imagePlaceholder gives it a fallback when an image fails to load.
+    imagePlaceholder:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=',
     filter: (n: Node) => {
-      // skip the annotator's own DOM
       if (n instanceof HTMLElement) {
         if (n.id === '__vylth_annotator__' || n.id === '__vylth_annotator_overlay__') return false;
       }
@@ -52,6 +55,16 @@ export async function capture(config: Config): Promise<Captured> {
     },
   });
 
+  // 30s hard timeout — if dom-to-image gets stuck on a problematic asset, fail
+  // loudly with a useful message instead of leaving the user staring at a spinner.
+  const timeoutP = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error('capture timed out after 30s — likely a cross-origin image without CORS headers')),
+      30_000
+    )
+  );
+
+  const dataUrl = await Promise.race([captureP, timeoutP]);
   return { dataUrl, rect };
 }
 

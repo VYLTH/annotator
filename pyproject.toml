@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vylth-annotator"
-version = "0.0.2"
+version = "0.0.3"
 description = "Drop-in design-feedback widget. Click → page freezes → drag a rect → engineer pulls the diagnostic envelope. Self-hostable on localhost."
 readme = "README.md"
 requires-python = ">=3.10"

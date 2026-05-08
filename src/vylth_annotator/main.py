@@ -50,8 +50,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins or ["*"],
     allow_methods=["GET", "POST", "OPTIONS"],
+    # Lock the allow-list to exactly the headers we use. Anything else gets
+    # blocked by the preflight and never reaches the handler.
     allow_headers=["X-Annot-Token", "Content-Type"],
     allow_credentials=False,
+    expose_headers=[],
+    max_age=600,
 )
 
 
@@ -73,7 +77,14 @@ async def create_feedback(
     m = _DATA_URL_RE.match(payload.image)
     if not m:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "image must be a data:image/png;base64 URL")
-    raw = base64.b64decode(m.group(1))
+    try:
+        raw = base64.b64decode(m.group(1), validate=True)
+    except Exception:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "image base64 is malformed")
+
+    # Validate PNG magic bytes — refuse anything else even if the data: URL claims png.
+    if len(raw) < 8 or raw[:8] != b"\x89PNG\r\n\x1a\n":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "image is not a valid PNG")
 
     # Hard cap: 25MB. Anything larger is almost certainly an accident.
     if len(raw) > 25_000_000:
@@ -231,7 +242,13 @@ async def widget_bundle() -> Response:
     bundle = _STATIC / "w.js"
     if not bundle.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "widget bundle missing — run `pnpm -F @vylth/annotator-widget build` and copy dist/w.js into the package")
-    return Response(content=bundle.read_bytes(), media_type="application/javascript")
+    # 5 min cache so updates roll out within a short window. With must-revalidate,
+    # browsers will check freshness via 304s rather than serving stale forever.
+    return Response(
+        content=bundle.read_bytes(),
+        media_type="application/javascript",
+        headers={"Cache-Control": "public, max-age=300, must-revalidate"},
+    )
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

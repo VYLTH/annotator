@@ -19,19 +19,56 @@ export interface Buffers {
   perf:    PerfSummary;
 }
 
-const SAFE_HEADERS = new Set(['content-type', 'content-length', 'cache-control', 'server', 'date']);
+// Patterns that look like secrets — replace with [REDACTED] before storing in
+// console/network ring buffers. Defence in depth: the user's app may log JWTs
+// or session tokens to console, and we don't want to ship those in envelopes.
+const SECRET_PATTERNS: RegExp[] = [
+  /Bearer\s+[A-Za-z0-9\-._~+/]+=*/g,                  // Bearer <token>
+  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?\b/g, // JWT
+  /\bsk_(live|test)_[A-Za-z0-9]{16,}\b/g,             // Stripe-style secret keys
+  /\bpk_(live|test)_[A-Za-z0-9]{16,}\b/g,             // ditto public-but-uniquely-shaped
+  /\b[A-Za-z0-9-_]{32,}\.[A-Za-z0-9-_]{32,}\b/g,       // generic long token-shaped
+  /\bAKIA[0-9A-Z]{16}\b/g,                             // AWS access key id
+  /\bgh[ps]_[A-Za-z0-9]{36,}\b/g,                      // GitHub PATs
+];
+
+function redactSecrets(s: string): string {
+  let out = s;
+  for (const re of SECRET_PATTERNS) out = out.replace(re, '[REDACTED]');
+  return out;
+}
+
+// URL secret-stripping: drop query-string params whose name implies sensitivity.
+const SENSITIVE_QS = new Set([
+  'token', 'access_token', 'refresh_token', 'id_token', 'auth_token',
+  'api_key', 'apikey', 'key', 'password', 'sig', 'signature', 'jwt',
+  'session', 'session_id', 'sessionid',
+]);
+function sanitizeUrl(raw: string): string {
+  try {
+    const u = new URL(raw, location.origin);
+    let touched = false;
+    u.searchParams.forEach((_v, k) => {
+      if (SENSITIVE_QS.has(k.toLowerCase())) { u.searchParams.set(k, '[REDACTED]'); touched = true; }
+    });
+    return touched ? u.toString() : raw;
+  } catch {
+    return raw;
+  }
+}
 
 function stringify(arg: unknown): string {
-  if (typeof arg === 'string') return arg;
-  if (arg instanceof Error)    return `${arg.name}: ${arg.message}`;
+  if (typeof arg === 'string') return redactSecrets(arg);
+  if (arg instanceof Error)    return redactSecrets(`${arg.name}: ${arg.message}`);
   try {
-    return JSON.stringify(arg, (_k, v) => {
+    const s = JSON.stringify(arg, (_k, v) => {
       if (typeof v === 'function') return `[Function ${v.name || 'anon'}]`;
       if (v instanceof HTMLElement) return `<${v.tagName.toLowerCase()}>`;
       return v;
     }).slice(0, 1000);
+    return redactSecrets(s);
   } catch {
-    return String(arg);
+    return redactSecrets(String(arg));
   }
 }
 
@@ -71,14 +108,14 @@ export function installTaps(): Buffers {
         const res = await origFetch(input as RequestInfo, init);
         if (res.status >= 400) {
           push(buffers.network, {
-            url, method, status: res.status,
+            url: sanitizeUrl(url), method, status: res.status,
             ms: Math.round(performance.now() - start), ts: Date.now()
           }, NETWORK_MAX);
         }
         return res;
       } catch (err) {
         push(buffers.network, {
-          url, method, status: 0,
+          url: sanitizeUrl(url), method, status: 0,
           ms: Math.round(performance.now() - start), ts: Date.now()
         }, NETWORK_MAX);
         throw err;
@@ -100,7 +137,7 @@ export function installTaps(): Buffers {
       if (!this.__vy) return;
       if (this.status >= 400 || this.status === 0) {
         push(buffers.network, {
-          url: this.__vy.url,
+          url: sanitizeUrl(this.__vy.url),
           method: this.__vy.method,
           status: this.status,
           ms: Math.round(performance.now() - this.__vy.start),

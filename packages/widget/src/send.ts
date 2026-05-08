@@ -54,15 +54,29 @@ export function buildEnvelope({ config, buffers, comment, rects, pngBase64 }: Bu
 }
 
 function describeTargetUnder(r: Rect): Target | null {
+  // The overlay covers the viewport during annotation. To find what's on the
+  // live page underneath the rect, toggle pointer-events:none on our hosts so
+  // elementFromPoint sees through them, then restore.
+  const overlay = document.getElementById('__vylth_annotator_overlay__') as HTMLElement | null;
+  const bubble  = document.getElementById('__vylth_annotator__') as HTMLElement | null;
+  const prevOv  = overlay?.style.pointerEvents;
+  const prevBu  = bubble?.style.pointerEvents;
+  if (overlay) overlay.style.pointerEvents = 'none';
+  if (bubble)  bubble.style.pointerEvents  = 'none';
+
   const cx = r.x + r.w / 2;
   const cy = r.y + r.h / 2;
   let el = document.elementFromPoint(cx, cy) as HTMLElement | null;
+
+  if (overlay) overlay.style.pointerEvents = prevOv ?? '';
+  if (bubble)  bubble.style.pointerEvents  = prevBu ?? '';
+
   if (!el) return null;
-  // walk up out of the annotator overlay if elementFromPoint hit it (shouldn't, since overlay covers — but defensive)
+  // Defensive: walk up out of any annotator element if it still hit one.
   while (el && (el.id === '__vylth_annotator__' || el.id === '__vylth_annotator_overlay__')) {
     el = el.parentElement;
   }
-  if (!el) return null;
+  if (!el || el === document.documentElement || el === document.body) return null;
 
   const rect = el.getBoundingClientRect();
   const cs = getComputedStyle(el);

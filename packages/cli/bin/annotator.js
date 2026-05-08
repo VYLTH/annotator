@@ -38,17 +38,33 @@ if (has('annotator')) {
 } else if (has('uvx')) {
   exec('uvx', ['vylth-annotator', ...args]);
 } else {
+  const platform = process.platform;
+  const pkgMgrHint =
+    platform === 'darwin' ? '    brew install pipx          # macOS\n' :
+    platform === 'win32'  ? '    python -m pip install --user pipx   # Windows (then `pipx ensurepath`)\n' :
+    '    sudo apt install pipx       # Debian / Ubuntu\n' +
+    '    sudo dnf install pipx       # Fedora\n' +
+    '    sudo pacman -S python-pipx  # Arch\n';
+
   console.error([
     '',
-    '  vylth-annotator needs a Python runtime to run the local server.',
-    '  Pick whichever you have:',
+    '  vylth-annotator runs on Python — pipx is the recommended way to install it.',
     '',
-    '    pipx install vylth-annotator     # recommended — isolated install',
-    '    uv tool install vylth-annotator  # if you use uv',
-    '    pip install --user vylth-annotator',
+    '  1. Install pipx (one-time, ~30 seconds):',
     '',
-    '  Then re-run this command. The npm package is a thin shim — the actual',
-    '  service is the Python package on PyPI: https://pypi.org/project/vylth-annotator/',
+    pkgMgrHint,
+    '  2. Install vylth-annotator:',
+    '',
+    '       pipx install vylth-annotator',
+    '',
+    '  3. Re-run whatever you were trying — `annotator run`, `annotator setup`, etc.',
+    '',
+    '  ─── alternatives ───',
+    '       uv tool install vylth-annotator    # if you use uv',
+    '       pip install --user vylth-annotator # if you can\'t install pipx',
+    '',
+    '  This npm package is a thin shim. The actual service ships from PyPI:',
+    '  https://pypi.org/project/vylth-annotator/',
     '',
   ].join('\n'));
   process.exit(127);
