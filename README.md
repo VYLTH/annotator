@@ -161,7 +161,7 @@ Tag issues with `good first issue` if you're starting out.
 
 ## Status
 
-v0.0.1 — first public release. Already shipping in real Vylth product loops; APIs may shift before 1.0. Pin minor versions in production for now.
+v0.0.3 — security hardening + zero-friction setup. Already shipping in real Vylth product loops; APIs may shift before 1.0. Pin minor versions in production for now.
 
 ---
 
@@ -175,7 +175,14 @@ Annotator is built and maintained by **[Vylth Labs](https://vylth.com)**.
 | **Want to build cool tools with us** | [careers@vylth.com](mailto:careers@vylth.com) |
 | **See what we're about** | [vylth.com](https://vylth.com) |
 | **Bugs / questions on this repo** | [open an issue](https://github.com/VYLTH/annotator/issues) |
-| **Security disclosures** | [labs@vylth.com](mailto:labs@vylth.com) (please don't open a public issue) |
+| **Security disclosures** | [labs@vylth.com](mailto:labs@vylth.com) — see [SECURITY.md](SECURITY.md) |
+
+### Follow along
+
+| | Vylth | The dev |
+|---|---|---|
+| GitHub | [@Vylthofficial](https://github.com/Vylthofficial) | [@iamdecatalyst](https://github.com/iamdecatalyst) |
+| X (Twitter) | [@Vylthofficial](https://x.com/Vylthofficial) | [@iamdecatalyst](https://x.com/iamdecatalyst) |
 
 ## License
 
