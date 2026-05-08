@@ -181,7 +181,7 @@ Annotator is built and maintained by **[Vylth Labs](https://vylth.com)**.
 
 | | Vylth | The dev |
 |---|---|---|
-| GitHub | [@Vylthofficial](https://github.com/Vylthofficial) | [@iamdecatalyst](https://github.com/iamdecatalyst) |
+| GitHub | [@VYLTH](https://github.com/VYLTH) | [@iamdecatalyst](https://github.com/iamdecatalyst) |
 | X (Twitter) | [@Vylthofficial](https://x.com/Vylthofficial) | [@iamdecatalyst](https://x.com/iamdecatalyst) |
 
 ## License
