@@ -73,32 +73,146 @@
     }
     .pill.errors { background: #2a1316; color: #ffb4b4; }
     .pill.netw   { background: #1c1a2a; color: #b4baff; }
+
+    /* Token / project picker */
+    .auth-modal {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(10, 11, 14, 0.85); backdrop-filter: blur(6px);
+      z-index: 100;
+    }
+    .auth-card {
+      background: linear-gradient(180deg, #161718 0%, #0a0b0c 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 24px 26px; width: min(420px, 92vw);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.55),
+        0 1px 0 0 rgba(255, 255, 255, 0.06) inset;
+    }
+    .auth-card h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+    .auth-card p  { margin: 0 0 16px; color: #8a8d94; font-size: 13px; }
+    .auth-field { margin-bottom: 12px; }
+    .auth-field label {
+      display: block; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: #8a8d94; margin-bottom: 6px;
+    }
+    .auth-field input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(22, 24, 29, 0.7); border: 1px solid #232730;
+      color: #ededed; border-radius: 8px;
+      padding: 9px 11px; font-family: inherit; font-size: 13px;
+    }
+    .auth-field input:focus { outline: 1px solid rgba(255, 255, 255, 0.4); border-color: transparent; }
+    .auth-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .btn-primary {
+      all: unset; cursor: pointer; flex: 1; text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, #e8e8ea 100%);
+      color: #0a0a0c; padding: 10px 12px; border-radius: 8px;
+      font-weight: 600; font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.2) inset;
+    }
+    .btn-primary:hover { background: linear-gradient(180deg, #ffffff 0%, #f4f4f6 100%); }
+    .switch-btn {
+      all: unset; cursor: pointer; padding: 4px 8px; font-size: 11px;
+      color: #8a8d94; border: 1px solid #232730; border-radius: 6px;
+      margin-left: 8px;
+    }
+    .switch-btn:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+    .auth-error { color: #ffb4b4; font-size: 12px; margin-top: 6px; }
   </style>
 </head>
 <body>
   <header>
     <span class="kicker">Annotator</span>
     <h1>Dashboard</h1>
-    <div class="meta"><b id="count">0</b> open · auto-refresh <span id="last">–</span></div>
+    <div class="meta">
+      <span id="proj-label" style="color:#fff;font-weight:600;"></span>
+      · <b id="count">0</b> open · auto-refresh <span id="last">–</span>
+      <button class="switch-btn" id="switch-project">Switch</button>
+    </div>
   </header>
 
   <div id="root">
     <div class="empty" id="empty">
-      <div>No annotations yet.</div>
-      <div style="margin-top:6px">Drop this into your local site's HTML to start collecting:</div>
-      <code>&lt;script src="http://localhost:8092/w.js" data-project="local" data-token="local" data-webhook="http://localhost:8092/v1/feedback"&gt;&lt;/script&gt;</code>
+      <div>No annotations yet for this project.</div>
+      <div style="margin-top:6px">Drop this into your dev site's HTML to start collecting:</div>
+      <code id="snippet"></code>
+    </div>
+  </div>
+
+  <div class="auth-modal" id="auth-modal" hidden>
+    <div class="auth-card">
+      <h2>Connect to a project</h2>
+      <p>Enter your project slug and the corresponding token to view its feedback queue.</p>
+      <div class="auth-field">
+        <label for="auth-project">Project</label>
+        <input id="auth-project" type="text" placeholder="cricket / mint / siren / …" autocomplete="off" />
+      </div>
+      <div class="auth-field">
+        <label for="auth-token">Token</label>
+        <input id="auth-token" type="password" placeholder="paste project token" autocomplete="off" />
+      </div>
+      <div class="auth-error" id="auth-error" hidden></div>
+      <div class="auth-actions">
+        <button class="btn-primary" id="auth-submit">Connect</button>
+      </div>
     </div>
   </div>
 
 <script>
-const root  = document.getElementById('root');
-const empty = document.getElementById('empty');
-const cntEl = document.getElementById('count');
-const lastEl = document.getElementById('last');
+const root      = document.getElementById('root');
+const empty     = document.getElementById('empty');
+const cntEl     = document.getElementById('count');
+const lastEl    = document.getElementById('last');
+const projLabel = document.getElementById('proj-label');
+const snippetEl = document.getElementById('snippet');
+const authModal = document.getElementById('auth-modal');
+const authProject = document.getElementById('auth-project');
+const authToken   = document.getElementById('auth-token');
+const authError   = document.getElementById('auth-error');
+const authSubmit  = document.getElementById('auth-submit');
+const switchBtn   = document.getElementById('switch-project');
+
+const STORE_KEY = 'vylth.annot.dashboard.creds';
+
+function loadCreds() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return null;
+    const c = JSON.parse(raw);
+    if (c && typeof c.project === 'string' && typeof c.token === 'string') return c;
+  } catch {}
+  return null;
+}
+function saveCreds(c) { localStorage.setItem(STORE_KEY, JSON.stringify(c)); }
+function clearCreds() { localStorage.removeItem(STORE_KEY); }
+
+let creds = loadCreds();
+let pollTimer = null;
+
+function showAuth(prefillError) {
+  authError.hidden = !prefillError;
+  authError.textContent = prefillError || '';
+  authProject.value = creds?.project || '';
+  authToken.value = '';
+  authModal.hidden = false;
+  setTimeout(() => authProject.focus(), 50);
+}
+function hideAuth() { authModal.hidden = true; }
 
 async function fetchOpen() {
+  if (!creds) return;
   try {
-    const res = await fetch('/v1/feedback?status=open', { headers: { 'X-Annot-Token': 'local' } });
+    const res = await fetch('/v1/feedback?status=open', {
+      headers: { 'X-Annot-Token': creds.token },
+    });
+    if (res.status === 401) {
+      stopPolling();
+      showAuth('Token rejected for project "' + creds.project + '". Check the slug + token and try again.');
+      return;
+    }
     if (!res.ok) throw new Error('http ' + res.status);
     const json = await res.json();
     render(json.items || []);
@@ -107,6 +221,65 @@ async function fetchOpen() {
     lastEl.textContent = 'error';
     console.error(e);
   }
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  fetchOpen();
+  pollTimer = setInterval(fetchOpen, 4000);
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+authSubmit.addEventListener('click', async () => {
+  const project = authProject.value.trim();
+  const token = authToken.value.trim();
+  if (!project || !token) {
+    authError.hidden = false;
+    authError.textContent = 'Both project slug and token are required.';
+    return;
+  }
+  // Probe the API to verify the token works before persisting
+  try {
+    const res = await fetch('/v1/feedback?status=open&limit=1', { headers: { 'X-Annot-Token': token } });
+    if (res.status === 401) {
+      authError.hidden = false;
+      authError.textContent = 'Token rejected. Check the value and try again.';
+      return;
+    }
+    if (!res.ok) throw new Error('http ' + res.status);
+    creds = { project, token };
+    saveCreds(creds);
+    projLabel.textContent = project;
+    snippetEl.textContent = `<script src="${location.origin}/w.js" data-project="${project}" data-token="${token}" data-webhook="${location.origin}/v1/feedback"><\/script>`;
+    hideAuth();
+    startPolling();
+  } catch (e) {
+    authError.hidden = false;
+    authError.textContent = 'Connection error: ' + e.message;
+  }
+});
+
+[authProject, authToken].forEach((el) => {
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter') authSubmit.click(); });
+});
+
+switchBtn.addEventListener('click', () => {
+  stopPolling();
+  clearCreds();
+  creds = null;
+  projLabel.textContent = '';
+  cntEl.textContent = '0';
+  showAuth();
+});
+
+if (creds) {
+  projLabel.textContent = creds.project;
+  snippetEl.textContent = `<script src="${location.origin}/w.js" data-project="${creds.project}" data-token="${creds.token}" data-webhook="${location.origin}/v1/feedback"><\/script>`;
+  startPolling();
+} else {
+  showAuth();
 }
 
 function pill(text, kind) { return `<span class="pill ${kind}">${text}</span>`; }
@@ -120,12 +293,24 @@ function render(items) {
   }
   empty.remove();
   root.innerHTML = `<div class="grid">${items.map(card).join('')}</div>`;
+  // Lazy-load each card image with auth header → blob URL → background-image
+  root.querySelectorAll('.img[data-img-id]').forEach(async (el) => {
+    const id = el.dataset.imgId;
+    try {
+      const r = await fetch(`/v1/feedback/${id}/image`, { headers: { 'X-Annot-Token': creds.token } });
+      if (!r.ok) return;
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      el.style.backgroundImage = `url('${url}')`;
+      el.addEventListener('click', () => window.open(url, '_blank'));
+    } catch {}
+  });
   root.querySelectorAll('button[data-resolve]').forEach((b) => {
     b.addEventListener('click', async () => {
       const id = b.dataset.resolve;
       await fetch(`/v1/feedback/${id}/resolve`, {
         method: 'POST',
-        headers: { 'X-Annot-Token': 'local' },
+        headers: { 'X-Annot-Token': creds?.token ?? '' },
       });
       fetchOpen();
     });
@@ -142,8 +327,7 @@ function card(fb) {
   const consol = (fb.console || []).length;
   return `
     <div class="card">
-      <div class="img" style="background-image:url('/v1/feedback/${fb.id}/image?_=${Date.now()}')"
-           onclick="window.open('/v1/feedback/${fb.id}/image','_blank')"></div>
+      <div class="img" data-img-id="${fb.id}"></div>
       <div class="body">
         <div class="comment">${escapeHtml(fb.comment)}</div>
         <div class="row">
@@ -168,8 +352,7 @@ function card(fb) {
   `;
 }
 
-fetchOpen();
-setInterval(fetchOpen, 4000);
+/* Polling is started by startPolling() once creds are loaded/entered. */
 </script>
 </body>
 </html>
